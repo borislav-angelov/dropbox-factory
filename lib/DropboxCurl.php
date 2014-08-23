@@ -2,7 +2,7 @@
 /* vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4: */
 
 /**
- * DropboxClient class main file
+ * DropboxCurl class minimal wrapper around a cURL handle
  *
  * PHP version 5
  *
@@ -33,10 +33,8 @@
  * @link      https://github.com/borislav-angelov/dropbox-factory/
  */
 
-require_once dirname(__FILE__) . DIRECTORY_SEPARATOR . 'DropboxCurl.php';
-
 /**
- * DropboxClient Main class
+ * DropboxCurl class
  *
  * @category  FileSystem
  * @package   DropboxFactory
@@ -47,20 +45,71 @@ require_once dirname(__FILE__) . DIRECTORY_SEPARATOR . 'DropboxCurl.php';
  * @version   GIT: 1.0.0
  * @link      https://github.com/borislav-angelov/dropbox-factory/
  */
-class DropboxClient
+
+class DropboxCurl
 {
-    // API Endpoints
-    const API_URL     = 'https://api.dropbox.com/1/';
-    const CONTENT_URL = 'https://api-content.dropbox.com/1/';
+    protected $handler = null;
 
-    /**
-     * OAuth Token
-     * @var string
-     */
-    protected $token = null;
+    public function __construct($url) {
+        // Check the cURL extension is loaded
+        if (!extension_loaded('curl')) {
+            throw new Exception('Dropbox Factory requires cURL extension');
+        }
 
-    public function __construct($token) {
-        $this->token = $token;
+        $this->handler = curl_init($url);
+
+        // Enable SSL support
+        $this->set(CURLOPT_SSL_VERIFYPEER, true);
+        $this->set(CURLOPT_SSL_VERIFYHOST, 2);
+        $this->set(CURLOPT_SSLVERSION, 3);
+        $this->set(CURLOPT_CAINFO, __DIR__ . '/certs/trusted-certs.crt');
+        $this->set(CURLOPT_CAPATH, __DIR__ . '/certs/');
+
+        // Limit vulnerability surface area.  Supported in cURL 7.19.4+
+        if (defined('CURLOPT_PROTOCOLS')) {
+            $this->set(CURLOPT_PROTOCOLS, CURLPROTO_HTTPS);
+        }
+
+        if (defined('CURLOPT_REDIR_PROTOCOLS')) {
+            $this->set(CURLOPT_REDIR_PROTOCOLS, CURLPROTO_HTTPS);
+        }
     }
 
+    /**
+     * Set cURL option
+     *
+     * @param int $option
+     * @param mixed $value
+     * @return void
+     */
+    public function set($option, $value) {
+        curl_setopt($this->handler, $option, $value);
+    }
+
+
+    /**
+     * Execute cURL request
+     *
+     * @return array
+     */
+    public function exec() {
+        $body = curl_exec($this->handler);
+        if ($body === false) {
+            throw new Exception("Error executing HTTP request: " . curl_error($this->handler));
+        }
+
+        $statusCode = curl_getinfo($this->handle, CURLINFO_HTTP_CODE);
+
+        return array(); //new HttpResponse($statusCode, $body);
+    }
+
+    /**
+     * Destroy cURL handler
+     *
+     * @return void
+     */
+    public function __destruct()
+    {
+        curl_close($this->handle);
+    }
 }

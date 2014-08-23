@@ -4,7 +4,7 @@
 [![Latest Stable Version](https://poser.pugx.org/dropbox-factory/dropbox-factory/v/stable.png)](https://packagist.org/packages/dropbox-factory/dropbox-factory)
 [![Total Downloads](https://poser.pugx.org/dropbox-factory/dropbox-factory/downloads.png)](https://packagist.org/packages/dropbox-factory/dropbox-factory)
 
-Lightweight Factory class for managing Dropbox API
+Lightweight factory class for managing Dropbox API instance
 
 ### Requirements
 PHP v5.2 and up. Tested on PHP v5.2.17, v5.3, v5.4, v5.5

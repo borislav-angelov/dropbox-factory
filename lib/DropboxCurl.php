@@ -62,8 +62,8 @@ class DropboxCurl
         $this->set(CURLOPT_SSL_VERIFYPEER, true);
         $this->set(CURLOPT_SSL_VERIFYHOST, 2);
         $this->set(CURLOPT_SSLVERSION, 3);
-        $this->set(CURLOPT_CAINFO, __DIR__ . '/certs/trusted-certs.crt');
-        $this->set(CURLOPT_CAPATH, __DIR__ . '/certs/');
+        $this->set(CURLOPT_CAINFO, __DIR__ . '/../certs/trusted-certs.crt');
+        $this->set(CURLOPT_CAPATH, __DIR__ . '/../certs/');
 
         // Limit vulnerability surface area.  Supported in cURL 7.19.4+
         if (defined('CURLOPT_PROTOCOLS')) {
@@ -86,7 +86,6 @@ class DropboxCurl
         curl_setopt($this->handler, $option, $value);
     }
 
-
     /**
      * Execute cURL request
      *
@@ -98,9 +97,9 @@ class DropboxCurl
             throw new Exception("Error executing HTTP request: " . curl_error($this->handler));
         }
 
-        $statusCode = curl_getinfo($this->handle, CURLINFO_HTTP_CODE);
+        $statusCode = curl_getinfo($this->handler, CURLINFO_HTTP_CODE);
 
-        return array(); //new HttpResponse($statusCode, $body);
+        return $body; //array(); //new HttpResponse($statusCode, $body);
     }
 
     /**
@@ -110,6 +109,6 @@ class DropboxCurl
      */
     public function __destruct()
     {
-        curl_close($this->handle);
+        curl_close($this->handler);
     }
 }

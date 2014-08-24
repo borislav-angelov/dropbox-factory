@@ -183,7 +183,7 @@ class DropboxClient
      * @param  string $path The Dropbox path at which to create the folder (UTF-8).
      * @return mixed
      */
-    public function createFolder($path){
+    public function createFolder($path) {
         $api = new DropboxCurl;
         $api->setAccessToken($this->accessToken);
         $api->setBaseURL(self::API_URL);
@@ -193,6 +193,21 @@ class DropboxClient
             'root' => 'auto',
             'path' => $path,
         ));
+
+        return $api->makeRequest();
+    }
+
+    /**
+     * Retrieves file and folder metadata
+     *
+     * @param  string $path The Dropbox path at which to create the folder (UTF-8).
+     * @return mixed
+     */
+    public function metadata($path) {
+        $api = new DropboxCurl;
+        $api->setAccessToken($this->accessToken);
+        $api->setBaseURL(self::API_URL);
+        $api->setPath("/metadata/auto/$path");
 
         return $api->makeRequest();
     }

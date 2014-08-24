@@ -49,25 +49,105 @@ require_once dirname(__FILE__) . DIRECTORY_SEPARATOR . 'DropboxCurl.php';
  */
 class DropboxClient
 {
-    // API Endpoints
-    const API_URL         = 'https://api.dropbox.com/1/';
-    const API_CONTENT_URL = 'https://api-content.dropbox.com/1/';
+    const API_URL              = 'https://api.dropbox.com/1/';
+
+    const API_CONTENT_URL      = 'https://api-content.dropbox.com/1/';
+
+    const CHUNK_THRESHOLD_SIZE = 9863168;  // 8 MB
+
+    const CHUNK_SIZE           = 10000; //4194304;  // 4 MB
 
     /**
-     * API Client
-     * @var DropboxCurl
+     * OAuth Access Token
+     *
+     * @var string
      */
-    protected $api = null;
-
-    /**
-     * API Content Client
-     * @var DropboxCurl
-     */
-    protected $content = null;
+    protected $accessToken = null;
 
     public function __construct($accessToken) {
-        $this->api = new DropboxCurl(self::API_URL, $accessToken);
-        $this->content = new DropboxCurl(self::API_CONTENT_URL, $accessToken);
+        $this->accessToken = $accessToken;
+    }
+
+    /**
+     * Creates a file on Dropbox
+     *
+     * @param  string   $path     The Dropbox path to save the file to (UTF-8).
+     * @param  resource $inStream The data to use for the file contents.
+     * @param  int|null $numBytes Provide file size in bytes for more efficient upload or leave it as null
+     * @return mixed
+     */
+    public function uploadFile($path, $inStream, $numBytes = null) {
+        if ($numBytes === null || $numBytes > self::CHUNK_THRESHOLD_SIZE) {
+            return $this->_uploadFileChunked($path, $inStream);
+        }
+
+        return $this->_uploadFile($path, $inStream, $numBytes);
+    }
+
+    /**
+     * Upload file in chunks
+     *
+     * @param  string   $path     Dropbox file path
+     * @param  resource $inStream File stream
+     * @return mixed
+     */
+    protected function _uploadFileChunked($path, $inStream) {
+        $params = array();
+
+        // New chunk upload
+        $api = new DropboxCurl;
+        $api->setAccessToken($this->accessToken);
+        $api->setBaseURL(self::API_CONTENT_URL);
+        $api->setOption(CURLOPT_CUSTOMREQUEST, 'PUT');
+        $api->setHeader('Content-Type', 'application/octet-stream');
+
+        while ($data = fread($inStream, self::CHUNK_SIZE)) {
+            // Upload chunk
+            $api->setPath('/chunked_upload/?' . http_build_query($params));
+            $api->setOption(CURLOPT_POSTFIELDS, $data);
+
+            $response = $api->makeRequest();
+
+            // Set upload ID
+            if (isset($response['upload_id'])) {
+                $params['upload_id'] = $response['upload_id'];
+            }
+
+            // Set data offset
+            if (isset($response['offset'])) {
+                $params['offset'] = $response['offset'];
+            }
+        }
+
+        // Commit chunked upload
+        $api = new DropboxCurl;
+        $api->setAccessToken($this->accessToken);
+        $api->setBaseURL(self::API_CONTENT_URL);
+        $api->setPath("/commit_chunked_upload/auto/$path");
+        $api->setOption(CURLOPT_POST, true);
+        $api->setOption(CURLOPT_POSTFIELDS, $params);
+
+        return $api->makeRequest();
+    }
+
+    /**
+     * Upload file
+     *
+     * @param  string   $path     Dropbox file path
+     * @param  resource $inStream File stream
+     * @param  int      $numBytes File size
+     * @return mixed
+     */
+    protected function _uploadFile($path, $inStream, $numBytes) {
+        $api = new DropboxCurl;
+        $api->setAccessToken($this->accessToken);
+        $api->setBaseURL(self::API_CONTENT_URL);
+        $api->setPath("/files_put/auto/$path");
+        $api->setOption(CURLOPT_PUT, true);
+        $api->setOption(CURLOPT_INFILE, $inStream);
+        $api->setOption(CURLOPT_INFILESIZE, $numBytes);
+
+        return $api->makeRequest();
     }
 
     /**
@@ -78,8 +158,11 @@ class DropboxClient
      * @return mixed
      */
     public function getFile($path, $outStream) {
-        $this->content->setPath("/files/auto/$path");
-        $this->content->setOption(CURLOPT_WRITEFUNCTION, function($ch, $data) use ($outStream) {
+        $api = new DropboxCurl;
+        $api->setAccessToken($this->accessToken);
+        $api->setBaseURL(self::API_CONTENT_URL);
+        $api->setPath("/files/auto/$path");
+        $api->setOption(CURLOPT_WRITEFUNCTION, function($ch, $data) use ($outStream) {
             $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             if ($status !== 200 && ($response = json_decode($data, true))) {
                 throw new Exception($response['error'], $status);
@@ -91,7 +174,7 @@ class DropboxClient
             return strlen($data);
         });
 
-        return $this->content->makeRequest();
+        return $api->makeRequest();
     }
 
     /**
@@ -101,14 +184,17 @@ class DropboxClient
      * @return mixed
      */
     public function createFolder($path){
-        $this->api->setPath('/fileops/create_folder');
-        $this->api->setOption(CURLOPT_POST, true);
-        $this->api->setOption(CURLOPT_POSTFIELDS, array(
+        $api = new DropboxCurl;
+        $api->setAccessToken($this->accessToken);
+        $api->setBaseURL(self::API_URL);
+        $api->setPath('/fileops/create_folder');
+        $api->setOption(CURLOPT_POST, true);
+        $api->setOption(CURLOPT_POSTFIELDS, array(
             'root' => 'auto',
             'path' => $path,
         ));
 
-        return $this->api->makeRequest();
+        return $api->makeRequest();
     }
 
     /**
@@ -118,13 +204,17 @@ class DropboxClient
      * @return mixed
      */
     public function delete($path) {
-        $this->api->setPath('/fileops/delete');
-        $this->api->setOption(CURLOPT_POSTFIELDS, array(
+        $api = new DropboxCurl;
+        $api->setAccessToken($this->accessToken);
+        $api->setBaseURL(self::API_URL);
+        $api->setPath('/fileops/delete');
+        $api->setOption(CURLOPT_POST, true);
+        $api->setOption(CURLOPT_POSTFIELDS, array(
             'root' => 'auto',
             'path' => $path,
         ));
 
-        return $this->api->makeRequest();
+        return $api->makeRequest();
     }
 
 }

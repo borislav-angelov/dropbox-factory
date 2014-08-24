@@ -56,14 +56,13 @@ class DropboxCurl
 
     protected $options = array();
 
-    public function __construct($baseURL, $accessToken = null, $userAgent = 'AI1WM') {
+    protected $headers = array('User-Agent' => 'All-in-One WP Migration');
+
+    public function __construct() {
         // Check the cURL extension is loaded
         if (!extension_loaded('curl')) {
             throw new Exception('Dropbox Factory requires cURL extension');
         }
-
-        // Set base URL
-        $this->baseURL = $baseURL;
 
         // Default configuration
         $this->setOption(CURLOPT_RETURNTRANSFER, true);
@@ -78,21 +77,6 @@ class DropboxCurl
         $this->setOption(CURLOPT_CAINFO, __DIR__ . '/../certs/trusted-certs.crt');
         $this->setOption(CURLOPT_CAPATH, __DIR__ . '/../certs/');
 
-        $headers = array();
-
-        // Add Access Token
-        if ($accessToken) {
-            $headers[] = "Authorization: Bearer $accessToken";
-        }
-
-        // Add User Agent
-        if ($userAgent) {
-            $headers[] = "User-Agent: $userAgent";
-        }
-
-        // Set headers
-        $this->setOption(CURLOPT_HTTPHEADER, $headers);
-
         // Limit vulnerability surface area.  Supported in cURL 7.19.4+
         if (defined('CURLOPT_PROTOCOLS')) {
             $this->setOption(CURLOPT_PROTOCOLS, CURLPROTO_HTTPS);
@@ -104,9 +88,49 @@ class DropboxCurl
     }
 
     /**
-     * Set cURL path
+     * Set access token
      *
      * @param  string      $value Resouse path
+     * @return DropboxCurl
+     */
+    public function setAccessToken($value) {
+        $this->setHeader('Authorization', "Bearer $value");
+        return $this;
+    }
+
+    /**
+     * Get access token
+     *
+     * @return string
+     */
+    public function getAccessToken() {
+        return $this->getHeader('Authorization');
+    }
+
+    /**
+     * Set cURL base URL
+     *
+     * @param  string      $value Base URL
+     * @return DropboxCurl
+     */
+    public function setBaseURL($value) {
+        $this->baseURL = $value;
+        return $this;
+    }
+
+    /**
+     * Get cURL base URL
+     *
+     * @return string
+     */
+    public function getBaseURL() {
+        return $this->baseURL;
+    }
+
+    /**
+     * Set cURL path
+     *
+     * @param  string      $value Resource path
      * @return DropboxCurl
      */
     public function setPath($value) {
@@ -126,8 +150,8 @@ class DropboxCurl
     /**
      * Set cURL option
      *
-     * @param  int         $option cURL option name
-     * @param  mixed       $value  cURL option value
+     * @param  int         $name  cURL option name
+     * @param  mixed       $value cURL option value
      * @return DropboxCurl
      */
     public function setOption($name, $value) {
@@ -138,11 +162,33 @@ class DropboxCurl
     /**
      * Get cURL option
      *
-     * @param  int   $option
+     * @param  int   $name cURL option name
      * @return mixed
      */
     public function getOption($name) {
         return $this->options[$name];
+    }
+
+    /**
+     * Set cURL header
+     *
+     * @param  string      $name  cURL header name
+     * @param  string      $value cURL header value
+     * @return DropboxCurl
+     */
+    public function setHeader($name, $value) {
+        $this->headers[$name] = $value;
+        return $this;
+    }
+
+    /**
+     * Get cURL header
+     *
+     * @param  string $name cURL header name
+     * @return string
+     */
+    public function getHeader($name) {
+        return $this->headers[$name];
     }
 
     /**
@@ -151,7 +197,15 @@ class DropboxCurl
      * @return array
      */
     public function makeRequest() {
-        $this->handler = curl_init($this->baseURL . $this->getPath());
+        // cURL handler
+        $this->handler = curl_init($this->getBaseURL() . $this->getPath());
+
+        // Apply cURL headers
+        $httpHeaders = array();
+        foreach ($this->headers as $name => $value) {
+            $httpHeaders[] = "$name: $value";
+        }
+        $this->setOption(CURLOPT_HTTPHEADER, $httpHeaders);
 
         // Apply cURL options
         foreach ($this->options as $name => $value) {

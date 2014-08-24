@@ -83,40 +83,20 @@ class DropboxClient
             fwrite($outStream, $data);
         });
 
-        return $this->content->exec();
+        return $this->content->makeRequest();
     }
 
     /**
-     * Creates a folder.
+     * Creates a folder
      *
-     * See <a href="https://www.dropbox.com/developers/core/docs#fileops-create-folder">/fileops/create_folder</a>.
-     *
-     * @param string $path
-     *    The Dropbox path at which to create the folder (UTF-8).
-     *
-     * @return array|null
-     *    If successful, you'll get back the
-     *    <a href="https://www.dropbox.com/developers/core/docs#metadata-details">metadata object</a>
-     *    for the newly-created folder.  If not successful, you'll get <code>null</code>.
-     *
-     * @throws Exception
+     * @param  string $path The Dropbox path at which to create the folder (UTF-8).
+     * @return mixed
      */
-    function createFolder($path)
-    {
-        Path::checkArgNonRoot("path", $path);
+    public function createFolder($path){
+        $this->api->setPath($path);
+        $this->api->setOption(CURLOPT_POST, true);
 
-        $response = $this->doPost(
-            $this->apiHost,
-            "1/fileops/create_folder",
-            array(
-                "root" => "auto",
-                "path" => $path,
-            ));
-
-        if ($response->statusCode === 403) return null;
-        if ($response->statusCode !== 200) throw RequestUtil::unexpectedStatus($response);
-
-        return RequestUtil::parseResponseJson($response->body);
+        return $this->api->makeRequest();
     }
 
     /**

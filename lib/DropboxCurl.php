@@ -131,7 +131,7 @@ class DropboxCurl
      * @return DropboxCurl
      */
     public function setOption($name, $value) {
-        $this->options[$option] = $value;
+        $this->options[$name] = $value;
         return $this;
     }
 
@@ -146,11 +146,11 @@ class DropboxCurl
     }
 
     /**
-     * Execute cURL request
+     * Make cURL request
      *
      * @return array
      */
-    public function exec() {
+    public function makeRequest() {
         $this->handler = curl_init($this->baseURL . $this->getPath());
 
         // Apply cURL options

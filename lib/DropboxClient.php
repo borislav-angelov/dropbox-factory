@@ -53,9 +53,9 @@ class DropboxClient
 
     const API_CONTENT_URL      = 'https://api-content.dropbox.com/1/';
 
-    const CHUNK_THRESHOLD_SIZE = 9863168;  // 8 MB
+    const CHUNK_THRESHOLD_SIZE = 52428800; // 50 MB
 
-    const CHUNK_SIZE           = 10000; //4194304;  // 4 MB
+    const CHUNK_SIZE           = 4194304;  // 4 MB
 
     /**
      * OAuth Access Token

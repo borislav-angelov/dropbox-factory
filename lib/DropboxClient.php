@@ -93,8 +93,12 @@ class DropboxClient
      * @return mixed
      */
     public function createFolder($path){
-        $this->api->setPath($path);
+        $this->api->setPath('/fileops/create_folder');
         $this->api->setOption(CURLOPT_POST, true);
+        $this->api->setOption(CURLOPT_POSTFIELDS, array(
+            'root' => 'auto',
+            'path' => $path,
+        ));
 
         return $this->api->makeRequest();
     }
@@ -102,32 +106,17 @@ class DropboxClient
     /**
      * Deletes a file or folder
      *
-     * See <a href="https://www.dropbox.com/developers/core/docs#fileops-delete">/fileops/delete</a>.
-     *
-     * @param string $path
-     *    The Dropbox path of the file or folder to delete (UTF-8).
-     *
+     * @param  string $path The Dropbox path of the file or folder to delete (UTF-8).
      * @return mixed
-     *    The <a href="https://www.dropbox.com/developers/core/docs#metadata-details">metadata
-     *    object</a> for the deleted file or folder.
-     *
-     * @throws Exception
      */
-    function delete($path)
-    {
-        Path::checkArgNonRoot("path", $path);
+    public function delete($path) {
+        $this->api->setPath('/fileops/delete');
+        $this->api->setOption(CURLOPT_POSTFIELDS, array(
+            'root' => 'auto',
+            'path' => $path,
+        ));
 
-        $response = $this->doPost(
-            $this->apiHost,
-            "1/fileops/delete",
-            array(
-                "root" => "auto",
-                "path" => $path,
-            ));
-
-        if ($response->statusCode !== 200) throw RequestUtil::unexpectedStatus($response);
-
-        return RequestUtil::parseResponseJson($response->body);
+        return $this->api->makeRequest();
     }
 
 }

@@ -50,11 +50,11 @@ class DropboxCurl
 {
     protected $baseURL = null;
 
+    protected $path    = null;
+
     protected $handler = null;
 
     protected $options = array();
-
-    protected $path    = null;
 
     public function __construct($baseURL, $accessToken = null, $userAgent = 'AI1WM') {
         // Check the cURL extension is loaded
@@ -104,6 +104,26 @@ class DropboxCurl
     }
 
     /**
+     * Set cURL path
+     *
+     * @param  string      $value Resouse path
+     * @return DropboxCurl
+     */
+    public function setPath($value) {
+        $this->path = $value;
+        return $this;
+    }
+
+    /**
+     * Get cURL path
+     *
+     * @return string
+     */
+    public function getPath() {
+        return $this->path;
+    }
+
+    /**
      * Set cURL option
      *
      * @param  int         $option cURL option name
@@ -126,33 +146,19 @@ class DropboxCurl
     }
 
     /**
-     * Set cURL path
-     *
-     * @param  string      $value Resouse path
-     * @return DropboxCurl
-     */
-    public function setPath($value) {
-        $this->path = $value;
-        return $this;
-    }
-
-    /**
-     * Get cURL path
-     *
-     * @return string
-     */
-    public function getPath() {
-        return $this->path;
-    }
-
-    /**
      * Execute cURL request
      *
      * @return array
      */
     public function exec() {
-        //curl_setopt($this->handler, $option, $value);
-        //$this->handler = curl_init($url);
+        $this->handler = curl_init($this->baseURL . $this->getPath());
+
+        // Apply cURL options
+        foreach ($this->options as $name => $value) {
+            curl_setopt($this->handler, $name, $value);
+        }
+
+        // HTTP request
         $body = curl_exec($this->handler);
         $code = curl_getinfo($this->handler, CURLINFO_HTTP_CODE);
         if ($body === false || $status !== 200) {
@@ -169,6 +175,8 @@ class DropboxCurl
      */
     public function __destruct()
     {
-        curl_close($this->handler);
+        if ($this->handler !== null) {
+            curl_close($this->handler);
+        }
     }
 }

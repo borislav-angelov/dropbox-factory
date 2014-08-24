@@ -54,13 +54,13 @@ class DropboxClient
     const CONTENT_URL = 'https://api-content.dropbox.com/1/';
 
     /**
-     * OAuth Token
-     * @var string
+     * Http Client
+     * @var DropboxCurl
      */
-    protected $token = null;
+    protected $curl = null;
 
     public function __construct($token) {
-        $this->token = $token;
+        //$this->curl = new DropboxCurl();
     }
 
 }

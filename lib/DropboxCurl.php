@@ -50,7 +50,7 @@ class DropboxCurl
 {
     protected $handler = null;
 
-    public function __construct($url) {
+    public function __construct($url, $accessToken = null, $userAgent = 'AI1WM') {
         // Check the cURL extension is loaded
         if (!extension_loaded('curl')) {
             throw new Exception('Dropbox Factory requires cURL extension');
@@ -58,12 +58,33 @@ class DropboxCurl
 
         $this->handler = curl_init($url);
 
+        // Default configuration
+        $this->set(CURLOPT_RETURNTRANSFER, true);
+        $this->set(CURLOPT_CONNECTTIMEOUT, 10);
+        $this->set(CURLOPT_LOW_SPEED_LIMIT, 1024);
+        $this->set(CURLOPT_LOW_SPEED_TIME, 10);
+
         // Enable SSL support
         $this->set(CURLOPT_SSL_VERIFYPEER, true);
         $this->set(CURLOPT_SSL_VERIFYHOST, 2);
         $this->set(CURLOPT_SSLVERSION, 3);
         $this->set(CURLOPT_CAINFO, __DIR__ . '/../certs/trusted-certs.crt');
         $this->set(CURLOPT_CAPATH, __DIR__ . '/../certs/');
+
+        $headers = array();
+
+        // Add Access Token
+        if ($accessToken) {
+            $headers[] = "Authorization: Bearer $accessToken";
+        }
+
+        // Add User Agent
+        if ($userAgent) {
+            $headers[] = "User-Agent: $userAgent";
+        }
+
+        // Set headers
+        $this->set(CURLOPT_HTTPHEADER, $headers);
 
         // Limit vulnerability surface area.  Supported in cURL 7.19.4+
         if (defined('CURLOPT_PROTOCOLS')) {
@@ -94,12 +115,10 @@ class DropboxCurl
     public function exec() {
         $body = curl_exec($this->handler);
         if ($body === false) {
-            throw new Exception("Error executing HTTP request: " . curl_error($this->handler));
+            throw new Exception('Error executing HTTP request: ' . curl_error($this->handler));
         }
 
-        $statusCode = curl_getinfo($this->handler, CURLINFO_HTTP_CODE);
-
-        return $body; //array(); //new HttpResponse($statusCode, $body);
+        return json_decode($body, true);
     }
 
     /**

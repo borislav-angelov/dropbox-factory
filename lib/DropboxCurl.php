@@ -159,12 +159,9 @@ class DropboxCurl
         }
 
         // HTTP request
-        $body   = curl_exec($this->handler);
-        $status = curl_getinfo($this->handler, CURLINFO_HTTP_CODE);
+        $body = curl_exec($this->handler);
         if ($body === false) {
             throw new Exception('Error executing HTTP request: ' . curl_error($this->handler));
-        } else if ($status !== 200) {
-            throw new Exception('Error executing HTTP status: ' . $status);
         }
 
         return json_decode($body, true);

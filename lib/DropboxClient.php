@@ -78,9 +78,14 @@ class DropboxClient
      * @return mixed
      */
     public function getFile($path, $outStream) {
-        $this->content->setPath($path);
+        $this->content->setPath("/files/auto/$path");
         $this->content->setOption(CURLOPT_WRITEFUNCTION, function($ch, $data) use ($outStream) {
-            fwrite($outStream, $data);
+            $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            if ($status === 200) {
+                fwrite($outStream, $data);
+            }
+
+            return strlen($data);
         });
 
         return $this->content->makeRequest();

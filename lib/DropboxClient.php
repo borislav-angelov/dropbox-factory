@@ -50,17 +50,104 @@ require_once dirname(__FILE__) . DIRECTORY_SEPARATOR . 'DropboxCurl.php';
 class DropboxClient
 {
     // API Endpoints
-    const API_URL     = 'https://api.dropbox.com/1/';
-    const CONTENT_URL = 'https://api-content.dropbox.com/1/';
+    const API_URL         = 'https://api.dropbox.com/1/';
+    const API_CONTENT_URL = 'https://api-content.dropbox.com/1/';
 
     /**
-     * Http Client
+     * API Client
      * @var DropboxCurl
      */
-    protected $curl = null;
+    protected $api = null;
 
-    public function __construct($token) {
-        //$this->curl = new DropboxCurl();
+    /**
+     * API Content Client
+     * @var DropboxCurl
+     */
+    protected $content = null;
+
+    public function __construct($accessToken) {
+        $this->api = new DropboxCurl(self::API_URL, $accessToken);
+        $this->content = new DropboxCurl(self::API_CONTENT_URL, $accessToken);
+    }
+
+    /**
+     * Downloads a file from Dropbox
+     *
+     * @param  string   $path      The path to the file on Dropbox (UTF-8).
+     * @param  resource $outStream If the file exists, the file contents will be written to this stream.
+     * @return mixed
+     */
+    public function getFile($path, $outStream) {
+        $this->content->setPath($path);
+        $this->content->setOption(CURLOPT_WRITEFUNCTION, function($ch, $data) use ($outStream) {
+            fwrite($outStream, $data);
+        });
+
+        return $this->content->exec();
+    }
+
+    /**
+     * Creates a folder.
+     *
+     * See <a href="https://www.dropbox.com/developers/core/docs#fileops-create-folder">/fileops/create_folder</a>.
+     *
+     * @param string $path
+     *    The Dropbox path at which to create the folder (UTF-8).
+     *
+     * @return array|null
+     *    If successful, you'll get back the
+     *    <a href="https://www.dropbox.com/developers/core/docs#metadata-details">metadata object</a>
+     *    for the newly-created folder.  If not successful, you'll get <code>null</code>.
+     *
+     * @throws Exception
+     */
+    function createFolder($path)
+    {
+        Path::checkArgNonRoot("path", $path);
+
+        $response = $this->doPost(
+            $this->apiHost,
+            "1/fileops/create_folder",
+            array(
+                "root" => "auto",
+                "path" => $path,
+            ));
+
+        if ($response->statusCode === 403) return null;
+        if ($response->statusCode !== 200) throw RequestUtil::unexpectedStatus($response);
+
+        return RequestUtil::parseResponseJson($response->body);
+    }
+
+    /**
+     * Deletes a file or folder
+     *
+     * See <a href="https://www.dropbox.com/developers/core/docs#fileops-delete">/fileops/delete</a>.
+     *
+     * @param string $path
+     *    The Dropbox path of the file or folder to delete (UTF-8).
+     *
+     * @return mixed
+     *    The <a href="https://www.dropbox.com/developers/core/docs#metadata-details">metadata
+     *    object</a> for the deleted file or folder.
+     *
+     * @throws Exception
+     */
+    function delete($path)
+    {
+        Path::checkArgNonRoot("path", $path);
+
+        $response = $this->doPost(
+            $this->apiHost,
+            "1/fileops/delete",
+            array(
+                "root" => "auto",
+                "path" => $path,
+            ));
+
+        if ($response->statusCode !== 200) throw RequestUtil::unexpectedStatus($response);
+
+        return RequestUtil::parseResponseJson($response->body);
     }
 
 }

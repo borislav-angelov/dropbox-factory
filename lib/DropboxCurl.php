@@ -48,28 +48,35 @@
 
 class DropboxCurl
 {
+    protected $baseURL = null;
+
     protected $handler = null;
 
-    public function __construct($url, $accessToken = null, $userAgent = 'AI1WM') {
+    protected $options = array();
+
+    protected $path    = null;
+
+    public function __construct($baseURL, $accessToken = null, $userAgent = 'AI1WM') {
         // Check the cURL extension is loaded
         if (!extension_loaded('curl')) {
             throw new Exception('Dropbox Factory requires cURL extension');
         }
 
-        $this->handler = curl_init($url);
+        // Set base URL
+        $this->baseURL = $baseURL;
 
         // Default configuration
-        $this->set(CURLOPT_RETURNTRANSFER, true);
-        $this->set(CURLOPT_CONNECTTIMEOUT, 10);
-        $this->set(CURLOPT_LOW_SPEED_LIMIT, 1024);
-        $this->set(CURLOPT_LOW_SPEED_TIME, 10);
+        $this->setOption(CURLOPT_RETURNTRANSFER, true);
+        $this->setOption(CURLOPT_CONNECTTIMEOUT, 10);
+        $this->setOption(CURLOPT_LOW_SPEED_LIMIT, 1024);
+        $this->setOption(CURLOPT_LOW_SPEED_TIME, 10);
 
         // Enable SSL support
-        $this->set(CURLOPT_SSL_VERIFYPEER, true);
-        $this->set(CURLOPT_SSL_VERIFYHOST, 2);
-        $this->set(CURLOPT_SSLVERSION, 3);
-        $this->set(CURLOPT_CAINFO, __DIR__ . '/../certs/trusted-certs.crt');
-        $this->set(CURLOPT_CAPATH, __DIR__ . '/../certs/');
+        $this->setOption(CURLOPT_SSL_VERIFYPEER, true);
+        $this->setOption(CURLOPT_SSL_VERIFYHOST, 2);
+        $this->setOption(CURLOPT_SSLVERSION, 3);
+        $this->setOption(CURLOPT_CAINFO, __DIR__ . '/../certs/trusted-certs.crt');
+        $this->setOption(CURLOPT_CAPATH, __DIR__ . '/../certs/');
 
         $headers = array();
 
@@ -84,27 +91,58 @@ class DropboxCurl
         }
 
         // Set headers
-        $this->set(CURLOPT_HTTPHEADER, $headers);
+        $this->setOption(CURLOPT_HTTPHEADER, $headers);
 
         // Limit vulnerability surface area.  Supported in cURL 7.19.4+
         if (defined('CURLOPT_PROTOCOLS')) {
-            $this->set(CURLOPT_PROTOCOLS, CURLPROTO_HTTPS);
+            $this->setOption(CURLOPT_PROTOCOLS, CURLPROTO_HTTPS);
         }
 
         if (defined('CURLOPT_REDIR_PROTOCOLS')) {
-            $this->set(CURLOPT_REDIR_PROTOCOLS, CURLPROTO_HTTPS);
+            $this->setOption(CURLOPT_REDIR_PROTOCOLS, CURLPROTO_HTTPS);
         }
     }
 
     /**
      * Set cURL option
      *
-     * @param int $option
-     * @param mixed $value
-     * @return void
+     * @param  int         $option cURL option name
+     * @param  mixed       $value  cURL option value
+     * @return DropboxCurl
      */
-    public function set($option, $value) {
-        curl_setopt($this->handler, $option, $value);
+    public function setOption($name, $value) {
+        $this->options[$option] = $value;
+        return $this;
+    }
+
+    /**
+     * Get cURL option
+     *
+     * @param  int   $option
+     * @return mixed
+     */
+    public function getOption($name) {
+        return $this->options[$name];
+    }
+
+    /**
+     * Set cURL path
+     *
+     * @param  string      $value Resouse path
+     * @return DropboxCurl
+     */
+    public function setPath($value) {
+        $this->path = $value;
+        return $this;
+    }
+
+    /**
+     * Get cURL path
+     *
+     * @return string
+     */
+    public function getPath() {
+        return $this->path;
     }
 
     /**
@@ -113,8 +151,11 @@ class DropboxCurl
      * @return array
      */
     public function exec() {
+        //curl_setopt($this->handler, $option, $value);
+        //$this->handler = curl_init($url);
         $body = curl_exec($this->handler);
-        if ($body === false) {
+        $code = curl_getinfo($this->handler, CURLINFO_HTTP_CODE);
+        if ($body === false || $status !== 200) {
             throw new Exception('Error executing HTTP request: ' . curl_error($this->handler));
         }
 

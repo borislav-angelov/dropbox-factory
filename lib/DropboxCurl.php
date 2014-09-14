@@ -29,7 +29,7 @@
  * @author    Bobby Angelov <bobby@servmask.com>
  * @copyright 2014 Yani Iliev, Bobby Angelov
  * @license   https://raw.github.com/borislav-angelov/dropbox-factory/master/LICENSE The MIT License (MIT)
- * @version   GIT: 1.0.0
+ * @version   GIT: 1.1.0
  * @link      https://github.com/borislav-angelov/dropbox-factory/
  */
 
@@ -42,7 +42,7 @@
  * @author    Bobby Angelov <bobby@servmask.com>
  * @copyright 2014 Yani Iliev, Bobby Angelov
  * @license   https://raw.github.com/borislav-angelov/dropbox-factory/master/LICENSE The MIT License (MIT)
- * @version   GIT: 1.0.0
+ * @version   GIT: 1.1.0
  * @link      https://github.com/borislav-angelov/dropbox-factory/
  */
 
@@ -213,12 +213,12 @@ class DropboxCurl
         }
 
         // HTTP request
-        $body = curl_exec($this->handler);
-        if ($body === false) {
+        $response = curl_exec($this->handler);
+        if ($response === false) {
             throw new Exception('Error executing HTTP request: ' . curl_error($this->handler));
         }
 
-        return json_decode($body, true);
+        return json_decode($response, true);
     }
 
     /**

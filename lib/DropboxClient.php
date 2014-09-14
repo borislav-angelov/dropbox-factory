@@ -29,7 +29,7 @@
  * @author    Bobby Angelov <bobby@servmask.com>
  * @copyright 2014 Yani Iliev, Bobby Angelov
  * @license   https://raw.github.com/borislav-angelov/dropbox-factory/master/LICENSE The MIT License (MIT)
- * @version   GIT: 1.0.0
+ * @version   GIT: 1.1.0
  * @link      https://github.com/borislav-angelov/dropbox-factory/
  */
 
@@ -44,7 +44,7 @@ require_once dirname(__FILE__) . DIRECTORY_SEPARATOR . 'DropboxCurl.php';
  * @author    Bobby Angelov <bobby@servmask.com>
  * @copyright 2014 Yani Iliev, Bobby Angelov
  * @license   https://raw.github.com/borislav-angelov/dropbox-factory/master/LICENSE The MIT License (MIT)
- * @version   GIT: 1.0.0
+ * @version   GIT: 1.1.0
  * @link      https://github.com/borislav-angelov/dropbox-factory/
  */
 class DropboxClient
@@ -53,9 +53,9 @@ class DropboxClient
 
     const API_CONTENT_URL      = 'https://api-content.dropbox.com/1/';
 
-    const CHUNK_THRESHOLD_SIZE = 52428800; // 50 MB
+    const CHUNK_THRESHOLD_SIZE = 9863168; // 8 MB
 
-    const CHUNK_SIZE           = 4194304;  // 4 MB
+    const CHUNK_SIZE           = 4194304; // 4 MB
 
     /**
      * OAuth Access Token
@@ -101,21 +101,21 @@ class DropboxClient
         $api->setOption(CURLOPT_CUSTOMREQUEST, 'PUT');
         $api->setHeader('Content-Type', 'application/octet-stream');
 
-        while ($data = fread($inStream, self::CHUNK_SIZE)) {
+        while (($data = fread($inStream, self::CHUNK_SIZE))) {
             // Upload chunk
             $api->setPath('/chunked_upload/?' . http_build_query($params));
             $api->setOption(CURLOPT_POSTFIELDS, $data);
 
-            $response = $api->makeRequest();
+            $info = $api->makeRequest();
 
             // Set upload ID
-            if (isset($response['upload_id'])) {
-                $params['upload_id'] = $response['upload_id'];
+            if (isset($info['upload_id'])) {
+                $params['upload_id'] = $info['upload_id'];
             }
 
             // Set data offset
-            if (isset($response['offset'])) {
-                $params['offset'] = $response['offset'];
+            if (isset($info['offset'])) {
+                $params['offset'] = $info['offset'];
             }
         }
 

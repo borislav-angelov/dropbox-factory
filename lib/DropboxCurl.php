@@ -213,12 +213,12 @@ class DropboxCurl
         }
 
         // HTTP request
-        $body = curl_exec($this->handler);
-        if ($body === false) {
+        $response = curl_exec($this->handler);
+        if ($response === false) {
             throw new Exception('Error executing HTTP request: ' . curl_error($this->handler));
         }
 
-        return json_decode($body, true);
+        return json_decode($response, true);
     }
 
     /**

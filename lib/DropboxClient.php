@@ -126,10 +126,11 @@ class DropboxClient
     /**
      * Commit upload file chunk
      *
-     * @param  array $params File parameters
+     * @param  string $path   Dropbox file path
+     * @param  array  $params File parameters
      * @return mixed
      */
-    public function uploadFileChunkCommit($params) {
+    public function uploadFileChunkCommit($path, $params) {
         $api = new DropboxCurl;
         $api->setAccessToken($this->accessToken);
         $api->setBaseURL(self::API_CONTENT_URL);

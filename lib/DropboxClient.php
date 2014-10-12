@@ -78,48 +78,58 @@ class DropboxClient
      */
     public function uploadFile($path, $inStream, $numBytes = null) {
         if ($numBytes === null || $numBytes > self::CHUNK_THRESHOLD_SIZE) {
-            return $this->_uploadFileChunked($path, $inStream);
+            $params = array();
+            while ($data = fread($inStream, self::CHUNK_SIZE)) {
+                $params = $this->uploadFileChunk($data, $params);
+            }
+
+            return $this->uploadFileChunkCommit($params);
         }
 
         return $this->_uploadFile($path, $inStream, $numBytes);
     }
 
     /**
-     * Upload file in chunks
+     * Upload file chunk
      *
-     * @param  string   $path     Dropbox file path
      * @param  resource $inStream File stream
-     * @return mixed
+     * @param  array    $params   File parameters
+     * @return array
      */
-    protected function _uploadFileChunked($path, $inStream) {
-        $params = array();
-
-        // New chunk upload
+    public function uploadFileChunk($inStream, $params) {
         $api = new DropboxCurl;
         $api->setAccessToken($this->accessToken);
         $api->setBaseURL(self::API_CONTENT_URL);
         $api->setOption(CURLOPT_CUSTOMREQUEST, 'PUT');
         $api->setHeader('Content-Type', 'application/octet-stream');
 
-        while (($data = fread($inStream, self::CHUNK_SIZE))) {
-            // Upload chunk
-            $api->setPath('/chunked_upload/?' . http_build_query($params));
-            $api->setOption(CURLOPT_POSTFIELDS, $data);
+        // Upload chunk
+        $api->setPath('/chunked_upload/?' . http_build_query($params));
+        $api->setOption(CURLOPT_POSTFIELDS, $inStream);
 
-            $info = $api->makeRequest();
+        // Make request
+        $response = $api->makeRequest();
 
-            // Set upload ID
-            if (isset($info['upload_id'])) {
-                $params['upload_id'] = $info['upload_id'];
-            }
-
-            // Set data offset
-            if (isset($info['offset'])) {
-                $params['offset'] = $info['offset'];
-            }
+        // Set upload ID
+        if (isset($response['upload_id'])) {
+            $params['upload_id'] = $response['upload_id'];
         }
 
-        // Commit chunked upload
+        // Set offset
+        if (isset($response['offset'])) {
+            $params['offset'] = $response['offset'];
+        }
+
+        return $params;
+    }
+
+    /**
+     * Commit upload file chunk
+     *
+     * @param  array $params File parameters
+     * @return mixed
+     */
+    public function uploadFileChunkCommit($params) {
         $api = new DropboxCurl;
         $api->setAccessToken($this->accessToken);
         $api->setBaseURL(self::API_CONTENT_URL);

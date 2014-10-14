@@ -164,15 +164,25 @@ class DropboxClient
     /**
      * Downloads a file from Dropbox
      *
-     * @param  string   $path      The path to the file on Dropbox (UTF-8).
-     * @param  resource $outStream If the file exists, the file contents will be written to this stream.
+     * @param  string   $path       The path to the file on Dropbox (UTF-8).
+     * @param  resource $outStream  If the file exists, the file contents will be written to this stream.
+     * @param  integer  $startBytes Range start bytes
+     * @param  integer  $endBytes   Range end bytes
+     * @param  integer  $numBytes   Range num bytes
      * @return mixed
      */
-    public function getFile($path, $outStream) {
+    public function getFile($path, $outStream, $startBytes = null, $endBytes = null, $numBytes = null) {
         $api = new DropboxCurl;
         $api->setAccessToken($this->accessToken);
         $api->setBaseURL(self::API_CONTENT_URL);
         $api->setPath("/files/auto/$path");
+
+        // Partial download
+        if ($startBytes !== null && $endBytes !== null && $numBytes !== null) {
+            $upload->setHeader('Content-Length', $endBytes - $startBytes + 1);
+            $upload->setHeader('Content-Range', "bytes $startBytes-$endBytes/$numBytes");
+        }
+
         $api->setOption(CURLOPT_WRITEFUNCTION, function($ch, $data) use ($outStream) {
             $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             if ($status !== 200 && ($response = json_decode($data, true))) {

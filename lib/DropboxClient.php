@@ -164,15 +164,39 @@ class DropboxClient
     /**
      * Downloads a file from Dropbox
      *
-     * @param  string   $path      The path to the file on Dropbox (UTF-8).
-     * @param  resource $outStream If the file exists, the file contents will be written to this stream.
+     * @param  string   $path       The path to the file on Dropbox (UTF-8).
+     * @param  resource $outStream  If the file exists, the file contents will be written to this stream.
+     * @param  array    $params     File parameters
      * @return mixed
      */
-    public function getFile($path, $outStream) {
+    public function getFile($path, $outStream, $params = array()) {
         $api = new DropboxCurl;
         $api->setAccessToken($this->accessToken);
         $api->setBaseURL(self::API_CONTENT_URL);
         $api->setPath("/files/auto/$path");
+
+        // Partial download
+        if (isset($params['size']) && isset($params['startBytes']) && isset($params['endBytes'])) {
+            $api->setHeader('Range', "bytes={$params['startBytes']}-{$params['endBytes']}");
+
+        $k = $params['size'] . ' => ' . $params['startBytes'] . '-' . $params['endBytes'] . "\n";
+        file_put_contents( AI1WM_STORAGE_PATH . '/output.txt', $k, FILE_APPEND);
+
+            // Next startBytes
+            if ($params['size'] < ($params['startBytes'] + self::CHUNK_SIZE)) {
+                $params['startBytes'] = $params['size'];
+            } else {
+                $params['startBytes'] = $params['endBytes'] + 1;
+            }
+
+            // Next endBytes
+            if ($params['size'] < ($params['endBytes'] + self::CHUNK_SIZE)) {
+                $params['endBytes'] = $params['size'];
+            } else {
+                $params['endBytes'] += self::CHUNK_SIZE;
+            }
+        }
+
         $api->setOption(CURLOPT_WRITEFUNCTION, function($ch, $data) use ($outStream) {
             $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             if ($status !== 200 && ($response = json_decode($data, true))) {
@@ -185,7 +209,10 @@ class DropboxClient
             return strlen($data);
         });
 
-        return $api->makeRequest();
+        // Make request
+        $response = $api->makeRequest();
+
+        return $params;
     }
 
     /**

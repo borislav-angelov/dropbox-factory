@@ -179,9 +179,6 @@ class DropboxClient
         if (isset($params['size']) && isset($params['startBytes']) && isset($params['endBytes'])) {
             $api->setHeader('Range', "bytes={$params['startBytes']}-{$params['endBytes']}");
 
-        $k = $params['size'] . ' => ' . $params['startBytes'] . '-' . $params['endBytes'] . "\n";
-        file_put_contents( AI1WM_STORAGE_PATH . '/output.txt', $k, FILE_APPEND);
-
             // Next startBytes
             if ($params['size'] < ($params['startBytes'] + self::CHUNK_SIZE)) {
                 $params['startBytes'] = $params['size'];

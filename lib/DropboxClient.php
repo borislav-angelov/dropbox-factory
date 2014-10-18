@@ -29,7 +29,7 @@
  * @author    Bobby Angelov <bobby@servmask.com>
  * @copyright 2014 Yani Iliev, Bobby Angelov
  * @license   https://raw.github.com/borislav-angelov/dropbox-factory/master/LICENSE The MIT License (MIT)
- * @version   GIT: 1.2.0
+ * @version   GIT: 1.3.0
  * @link      https://github.com/borislav-angelov/dropbox-factory/
  */
 
@@ -44,7 +44,7 @@ require_once dirname(__FILE__) . DIRECTORY_SEPARATOR . 'DropboxCurl.php';
  * @author    Bobby Angelov <bobby@servmask.com>
  * @copyright 2014 Yani Iliev, Bobby Angelov
  * @license   https://raw.github.com/borislav-angelov/dropbox-factory/master/LICENSE The MIT License (MIT)
- * @version   GIT: 1.2.0
+ * @version   GIT: 1.3.0
  * @link      https://github.com/borislav-angelov/dropbox-factory/
  */
 class DropboxClient

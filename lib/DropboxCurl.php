@@ -73,7 +73,7 @@ class DropboxCurl
         // Enable SSL support
         $this->setOption(CURLOPT_SSL_VERIFYPEER, true);
         $this->setOption(CURLOPT_SSL_VERIFYHOST, 2);
-        $this->setOption(CURLOPT_SSLVERSION, 3);
+        $this->setOption(CURLOPT_SSLVERSION, 1);
         $this->setOption(CURLOPT_CAINFO, __DIR__ . '/../certs/trusted-certs.crt');
         $this->setOption(CURLOPT_CAPATH, __DIR__ . '/../certs/');
 

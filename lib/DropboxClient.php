@@ -29,7 +29,7 @@
  * @author    Bobby Angelov <bobby@servmask.com>
  * @copyright 2014 Yani Iliev, Bobby Angelov
  * @license   https://raw.github.com/borislav-angelov/dropbox-factory/master/LICENSE The MIT License (MIT)
- * @version   GIT: 1.3.0
+ * @version   GIT: 1.4.0
  * @link      https://github.com/borislav-angelov/dropbox-factory/
  */
 
@@ -44,7 +44,7 @@ require_once dirname(__FILE__) . DIRECTORY_SEPARATOR . 'DropboxCurl.php';
  * @author    Bobby Angelov <bobby@servmask.com>
  * @copyright 2014 Yani Iliev, Bobby Angelov
  * @license   https://raw.github.com/borislav-angelov/dropbox-factory/master/LICENSE The MIT License (MIT)
- * @version   GIT: 1.3.0
+ * @version   GIT: 1.4.0
  * @link      https://github.com/borislav-angelov/dropbox-factory/
  */
 class DropboxClient
@@ -73,7 +73,7 @@ class DropboxClient
      *
      * @param  string   $path     The Dropbox path to save the file to (UTF-8).
      * @param  resource $inStream The data to use for the file contents.
-     * @param  int|null $numBytes Provide file size in bytes for more efficient upload or leave it as null
+     * @param  int|null $numBytes Provide file size in bytes for more efficient upload or leave it as null.
      * @return mixed
      */
     public function uploadFile($path, $inStream, $numBytes = null) {
@@ -92,8 +92,8 @@ class DropboxClient
     /**
      * Upload file chunk
      *
-     * @param  resource $inStream File stream
-     * @param  array    $params   File parameters
+     * @param  resource $inStream File stream.
+     * @param  array    $params   File parameters.
      * @return array
      */
     public function uploadFileChunk($inStream, $params) {
@@ -126,8 +126,8 @@ class DropboxClient
     /**
      * Commit upload file chunk
      *
-     * @param  string $path   Dropbox file path
-     * @param  array  $params File parameters
+     * @param  string $path   Dropbox file path.
+     * @param  array  $params File parameters.
      * @return mixed
      */
     public function uploadFileChunkCommit($path, $params) {
@@ -166,7 +166,7 @@ class DropboxClient
      *
      * @param  string   $path       The path to the file on Dropbox (UTF-8).
      * @param  resource $outStream  If the file exists, the file contents will be written to this stream.
-     * @param  array    $params     File parameters
+     * @param  array    $params     File parameters.
      * @return mixed
      */
     public function getFile($path, $outStream, $params = array()) {
@@ -174,6 +174,17 @@ class DropboxClient
         $api->setAccessToken($this->accessToken);
         $api->setBaseURL(self::API_CONTENT_URL);
         $api->setPath("/files/auto/$path");
+        $api->setOption(CURLOPT_WRITEFUNCTION, function($ch, $data) use ($outStream) {
+            $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            if ($status !== 200 && ($response = json_decode($data, true))) {
+                throw new Exception($response['error'], $status);
+            }
+
+            // Write data to stream
+            fwrite($outStream, $data);
+
+            return strlen($data);
+        });
 
         // Partial download
         if (isset($params['size']) && isset($params['startBytes']) && isset($params['endBytes'])) {
@@ -193,18 +204,6 @@ class DropboxClient
                 $params['endBytes'] += self::CHUNK_SIZE;
             }
         }
-
-        $api->setOption(CURLOPT_WRITEFUNCTION, function($ch, $data) use ($outStream) {
-            $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            if ($status !== 200 && ($response = json_decode($data, true))) {
-                throw new Exception($response['error'], $status);
-            }
-
-            // Write data to stream
-            fwrite($outStream, $data);
-
-            return strlen($data);
-        });
 
         // Make request
         $response = $api->makeRequest();

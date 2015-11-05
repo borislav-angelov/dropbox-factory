@@ -83,7 +83,7 @@ class DropboxClient
                 $params = $this->uploadFileChunk($data, $params);
             }
 
-            return $this->uploadFileChunkCommit($params);
+            return $this->uploadFileChunkCommit($path, $params);
         }
 
         return $this->_uploadFile($path, $inStream, $numBytes);

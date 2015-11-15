@@ -9,10 +9,6 @@ Lightweight factory class for managing Dropbox API instance
 ### Requirements
 PHP v5.2 and up. Tested on PHP v5.2.17, v5.3, v5.4, v5.5
 
-### Usage
-```php
-```
-
 ### Tests
 Coverage reports are stored inside the coverage folder.
 ```bash
